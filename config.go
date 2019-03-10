@@ -19,9 +19,10 @@ type Domain struct {
 	Hostname string `toml:"hostname" validate:"fqdn,required"`
 }
 
-var Config = &Configs{}
+var Config *Configs
 
 func LoadConfig() error {
+	Config = &Configs{}
 	if _, err := toml.DecodeFile(configFilename, Config); err != nil {
 		return xerrors.Errorf(": %w", err)
 	}
