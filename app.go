@@ -13,7 +13,7 @@ func NewApp() *cli.App {
 		Authors: []*cli.Author{
 			{Name: "JINNOUCHI Yasushi", Email: "me@delphinus.dev"},
 		},
-		Before: handlExit(LoadConfig),
+		Before: handlExit(Before),
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "verbose",
@@ -24,9 +24,17 @@ func NewApp() *cli.App {
 	}
 }
 
+func Before(c *cli.Context) error {
+	if err := Logger(c); err != nil {
+		return err
+	}
+	return nil
+}
+
 func handlExit(handler func(*cli.Context) error) func(*cli.Context) error {
 	return func(c *cli.Context) error {
 		if err := handler(c); err != nil {
+			logger.Warning(fmt.Sprintf("error received: %+v", err))
 			return cli.Exit(fmt.Sprintf("%+v", err), 1)
 		}
 		return nil

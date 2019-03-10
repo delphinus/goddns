@@ -3,28 +3,28 @@ package main
 import (
 	"github.com/BurntSushi/toml"
 	"golang.org/x/xerrors"
-	"gopkg.in/go-playground/validator.v9"
-	"gopkg.in/urfave/cli.v2"
+	validator "gopkg.in/go-playground/validator.v9"
 )
 
-const filename = "/usr/local/etc/goddns.toml"
+var validate = validator.New()
+var configFilename = "/usr/local/etc/goddns.toml"
 
 type Configs struct {
-	Interval int `toml:"interval" validate:"gt=0,required"`
-	Domains  []struct {
-		Username string `toml:"username" validate:"required"`
-		Password string `toml:"password" validate:"required"`
-		Domain   string `toml:"domain" validate:"fqdn,required"`
-	} `toml:"domains" validate:"gt=0,dive,required"`
+	Domains []*Domain `toml:"domains" validate:"gt=0,dive,required"`
 }
 
-var Config = &Configs{Interval: 60}
+type Domain struct {
+	Username string `toml:"username" validate:"required"`
+	Password string `toml:"password" validate:"required"`
+	Hostname string `toml:"hostname" validate:"fqdn,required"`
+}
 
-func LoadConfig(*cli.Context) error {
-	if _, err := toml.DecodeFile(filename, Config); err != nil {
+var Config = &Configs{}
+
+func LoadConfig() error {
+	if _, err := toml.DecodeFile(configFilename, Config); err != nil {
 		return xerrors.Errorf(": %w", err)
 	}
-	validate := validator.New()
 	if err := validate.Struct(Config); err != nil {
 		return xerrors.Errorf(": %w", err)
 	}
