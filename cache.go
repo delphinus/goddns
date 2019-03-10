@@ -17,6 +17,7 @@ var osOpenFile = os.OpenFile // for testing
 
 type Cache interface {
 	CanUpdate() error
+	Filename() string
 	IsSame(ip string) bool
 	Save(ip string) error
 }
@@ -54,6 +55,8 @@ func (c *Caches) CanUpdate() error {
 	}
 	return nil
 }
+
+func (c *Caches) Filename() string { return c.filename }
 
 func (c *Caches) IsSame(ip string) bool { return ip == c.IP }
 

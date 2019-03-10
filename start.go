@@ -16,6 +16,7 @@ func Start(domain *Domain) (Result, error) {
 	if err != nil {
 		return nil, xerrors.Errorf(": %w", err)
 	}
+	logger.Notice(fmt.Sprintf("cache detected: %s", cache.Filename()))
 	if cache.IsSame(ip) {
 		return NoNeedToUpdate(), nil
 	}
