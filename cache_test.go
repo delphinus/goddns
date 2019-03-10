@@ -38,12 +38,6 @@ func TestNewCache(t *testing.T) {
 			updatedAt = 2019-01-02T12:00:00Z
 			canUpdatedIn = 2019-01-02T12:05:00Z
 		`, pattern: "cache with IPv6"},
-		{cache: `
-			ip = '192.168.1.1'
-			createdAt = 2019-01-02T12:00:00Z
-			updatedAt = 2019-01-02T12:00:00Z
-			canUpdatedIn = 2019-12-01T12:00:00Z
-		`, hasError: true, pattern: "too fast to update"},
 	} {
 		func() {
 			defer prepareCacheDetail(t, c.cache)()
@@ -60,6 +54,22 @@ func TestNewCache(t *testing.T) {
 			}
 		}()
 	}
+}
+
+func TestCacheCanUpdate(t *testing.T) {
+	a := assert.New(t)
+	defer prepareCacheDetail(t, `
+		ip = '192.168.1.1'
+		createdAt = 2019-01-02T12:00:00Z
+		updatedAt = 2019-01-02T12:00:00Z
+		canUpdatedIn = 2019-12-01T12:00:00Z
+	`)()
+	cache, err := NewCache(&Domain{Hostname: "example.com"})
+	a.NoError(err)
+	a.Implements((*Cache)(nil), cache)
+	err = cache.CanUpdate()
+	a.Error(err)
+	t.Logf("err: %v", err)
 }
 
 func TestCacheSave(t *testing.T) {

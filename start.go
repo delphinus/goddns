@@ -19,6 +19,9 @@ func Start(domain *Domain) (Result, error) {
 	if cache.IsSame(ip) {
 		return NoNeedToUpdate(), nil
 	}
+	if err := cache.CanUpdate(); err != nil {
+		return nil, xerrors.Errorf(": %w", err)
+	}
 	updater := NewUpdater(domain, ip)
 	result, err := updater.Update()
 	if err != nil {

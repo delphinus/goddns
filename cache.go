@@ -16,6 +16,7 @@ var updateIntervalSeconds = time.Duration(60*5) * time.Second
 var osOpenFile = os.OpenFile // for testing
 
 type Cache interface {
+	CanUpdate() error
 	IsSame(ip string) bool
 	Save(ip string) error
 }
@@ -43,11 +44,15 @@ func NewCache(domain *Domain) (Cache, error) {
 	if err := validate.Struct(cache); err != nil {
 		return nil, xerrors.Errorf(": %w", err)
 	}
-	if cache.CanUpdatedIn.After(timeNow()) {
-		return nil, xerrors.New(fmt.Sprintf("%s cannot be updated in %s",
-			domain.Hostname, cache.CanUpdatedIn))
-	}
 	return cache, nil
+}
+
+func (c *Caches) CanUpdate() error {
+	if c.CanUpdatedIn.After(timeNow()) {
+		return xerrors.New(fmt.Sprintf("%s cannot be updated in %s",
+			c.domain.Hostname, c.CanUpdatedIn))
+	}
+	return nil
 }
 
 func (c *Caches) IsSame(ip string) bool { return ip == c.IP }
