@@ -20,7 +20,7 @@ type results struct {
 var sig = make(chan os.Signal)
 
 func Action(*cli.Context) error {
-	_ = logger.Info("start")
+	_ = logger.Notice("start")
 	exit := make(chan int)
 	resultsChan := make(chan results)
 	go tick(exit, resultsChan)
@@ -57,15 +57,15 @@ LOOP:
 		case <-exit:
 			break LOOP
 		case <-t.C:
-			_ = logger.Info(fmt.Sprintf("loading %s", configFilename))
+			_ = logger.Notice(fmt.Sprintf("loading %s", configFilename))
 			if err := LoadConfig(); err != nil {
 				resultsChan <- results{err: err}
 				continue LOOP
 			}
 			for _, domain := range Config.Domains {
-				_ = logger.Info(fmt.Sprintf("starting: %s", domain.Hostname))
+				_ = logger.Notice(fmt.Sprintf("starting: %s", domain.Hostname))
 				result, err := Start(domain)
-				_ = logger.Info(fmt.Sprintf("result: %s", result))
+				_ = logger.Notice(fmt.Sprintf("result: %s", result))
 				resultsChan <- results{result: result, err: err}
 			}
 		}

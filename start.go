@@ -11,7 +11,7 @@ func Start(domain *Domain) (Result, error) {
 	if err != nil {
 		return nil, xerrors.Errorf(": %w", err)
 	}
-	logger.Info(fmt.Sprintf("detected: %s", ip))
+	logger.Notice(fmt.Sprintf("detected: %s", ip))
 	cache, err := NewCache(domain)
 	if err != nil {
 		return nil, xerrors.Errorf(": %w", err)

@@ -8,7 +8,7 @@ import (
 )
 
 type Loggers interface {
-	Info(m string) error
+	Notice(m string) error
 	Warning(m string) error
 	Crit(m string) error
 }
@@ -16,7 +16,7 @@ type Loggers interface {
 var logger Loggers
 
 func Logger(*cli.Context) (err error) {
-	logger, err = syslog.New(syslog.LOG_INFO, "goddns")
+	logger, err = syslog.New(syslog.LOG_NOTICE, "goddns")
 	if err != nil {
 		return xerrors.Errorf(": %w", err)
 	}

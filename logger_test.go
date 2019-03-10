@@ -12,8 +12,8 @@ type testLogger struct {
 	t *testing.T
 }
 
-func (l testLogger) Info(m string) error {
-	l.t.Logf("Info: %s", m)
+func (l testLogger) Notice(m string) error {
+	l.t.Logf("Notice: %s", m)
 	return nil
 }
 
