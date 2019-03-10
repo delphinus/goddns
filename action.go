@@ -73,7 +73,9 @@ func process(exit <-chan int, resultsChan chan<- results) {
 	for _, domain := range Config.Domains {
 		_ = logger.Notice(fmt.Sprintf("starting: %s", domain.Hostname))
 		result, err := Start(domain)
-		_ = logger.Notice(fmt.Sprintf("result: %s", result))
+		if result != nil {
+			_ = logger.Notice(fmt.Sprintf("result: %s", result))
+		}
 		resultsChan <- results{result: result, err: err}
 	}
 }
