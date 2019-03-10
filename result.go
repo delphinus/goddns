@@ -49,7 +49,7 @@ func NewResult(r io.Reader) (Result, error) {
 		result.ip = string(parts[1])
 	}
 	if !result.isValid() {
-		return nil, xerrors.Errorf("content: '%s' is invalid", content)
+		return nil, xerrors.New(fmt.Sprintf("content: '%s' is invalid", content))
 	}
 	return result, nil
 }

@@ -30,7 +30,7 @@ func Start(domain *Domain) (Result, error) {
 		}
 		return result, nil
 	} else if result.IsCritical() {
-		return nil, xerrors.Errorf("Updater returned a critical error: %s", result)
+		return nil, xerrors.New(fmt.Sprintf("Updater returned a critical error: %s", result))
 	}
 	return result, nil
 }

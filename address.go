@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -16,7 +17,7 @@ func Address() (string, error) {
 		return "", xerrors.Errorf(": %w", err)
 	}
 	if resp.StatusCode/100 != 2 {
-		return "", xerrors.Errorf("%s returned %s", checkipUrl, resp.Status)
+		return "", xerrors.New(fmt.Sprintf("%s returned %s", checkipUrl, resp.Status))
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -24,7 +25,7 @@ func Address() (string, error) {
 	}
 	ip := string(body)
 	if net.ParseIP(ip) == nil {
-		return "", xerrors.Errorf("body is not IP Address: %s", body)
+		return "", xerrors.New(fmt.Sprintf("body is not IP Address: %s", body))
 	}
 	return ip, nil
 }

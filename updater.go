@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 
@@ -30,7 +31,7 @@ func (u *Updaters) Update() (Result, error) {
 		return nil, xerrors.Errorf(": %w", err)
 	}
 	if resp.StatusCode/100 != 2 {
-		return nil, xerrors.Errorf("%s returned %s", updaterUrl, resp.Status)
+		return nil, xerrors.New(fmt.Sprintf("%s returned %s", updaterUrl, resp.Status))
 	}
 	result, err := NewResult(resp.Body)
 	if err != nil {
