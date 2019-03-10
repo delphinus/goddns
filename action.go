@@ -38,7 +38,7 @@ LOOP:
 			}
 		case results := <-resultsChan:
 			if results.err != nil {
-				_ = logger.Warning(fmt.Sprintf("error occurred. trying again later: %+v", results.err))
+				_ = logger.Warning(fmt.Sprintf("error occurred. trying again later: %v, %+v", results.err, results.err))
 			} else if results.result.IsCritical() {
 				_ = logger.Crit(fmt.Sprintf("critical error occurred. exiting...: %+v", results.result))
 				exit <- 1
