@@ -51,24 +51,29 @@ LOOP:
 
 func tick(exit <-chan int, resultsChan chan<- results) {
 	t := time.NewTicker(tickIntervalSeconds)
+	process(exit, resultsChan)
 LOOP:
 	for {
 		select {
 		case <-exit:
 			break LOOP
 		case <-t.C:
-			_ = logger.Notice(fmt.Sprintf("loading %s", configFilename))
-			if err := LoadConfig(); err != nil {
-				resultsChan <- results{err: err}
-				continue LOOP
-			}
-			for _, domain := range Config.Domains {
-				_ = logger.Notice(fmt.Sprintf("starting: %s", domain.Hostname))
-				result, err := Start(domain)
-				_ = logger.Notice(fmt.Sprintf("result: %s", result))
-				resultsChan <- results{result: result, err: err}
-			}
+			process(exit, resultsChan)
 		}
 	}
 	t.Stop()
+}
+
+func process(exit <-chan int, resultsChan chan<- results) {
+	_ = logger.Notice(fmt.Sprintf("loading %s", configFilename))
+	if err := LoadConfig(); err != nil {
+		resultsChan <- results{err: err}
+		return
+	}
+	for _, domain := range Config.Domains {
+		_ = logger.Notice(fmt.Sprintf("starting: %s", domain.Hostname))
+		result, err := Start(domain)
+		_ = logger.Notice(fmt.Sprintf("result: %s", result))
+		resultsChan <- results{result: result, err: err}
+	}
 }
