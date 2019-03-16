@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"syscall"
 	"testing"
 	"time"
@@ -36,11 +37,12 @@ func TestAction(t *testing.T) {
 	defer prepareAddressOK(t, "192.168.100.100")()
 	defer prepareCacheOK(t)()
 	defer prepareUpdaterOK(t)()
+	sig := make(chan os.Signal)
 	go func() {
 		time.Sleep(1500 * time.Millisecond)
 		t.Logf("sending sig")
 		sig <- syscall.SIGINT
 	}()
-	a.NoError(Action(&cli.Context{}))
+	a.NoError(Action(sig)(&cli.Context{}))
 	time.Sleep(1 * time.Second)
 }

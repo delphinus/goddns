@@ -15,36 +15,41 @@ type results struct {
 	err    error
 }
 
-var sig = make(chan os.Signal)
-
-func Action(*cli.Context) error {
-	logger.Info("start")
-	exit := make(chan int)
-	resultsChan := make(chan results)
-	go tick(exit, resultsChan)
-	signal.Notify(sig, syscall.SIGINT)
-LOOP:
-	for {
-		select {
-		case s := <-sig:
-			if s == syscall.SIGINT {
-				logger.Warning("SIGINT received. exiting...")
-				exit <- 1
-				break LOOP
-			} else {
-				logger.Warningf("unknwon signal: %s received.", s)
-			}
-		case results := <-resultsChan:
-			if results.err != nil {
-				logger.Warningf("error occurred. trying again later: %v, %+v", results.err, results.err)
-			} else if results.result.IsCritical() {
-				logger.Errorf("critical error occurred. exiting...: %+v", results.result)
-				exit <- 1
-				break LOOP
+// Action is the main logic for the app
+func Action(sig chan os.Signal) func(*cli.Context) error {
+	if sig == nil {
+		sig = make(chan os.Signal)
+	}
+	return func(*cli.Context) error {
+		logger.Info("start")
+		exit := make(chan int)
+		resultsChan := make(chan results)
+		go tick(exit, resultsChan)
+		signal.Notify(sig, syscall.SIGINT)
+	LOOP:
+		for {
+			select {
+			case s := <-sig:
+				if s == syscall.SIGINT {
+					logger.Warning("SIGINT received. exiting...")
+					exit <- 1
+					break LOOP
+				} else {
+					logger.Warningf("unknwon signal: %s received.", s)
+				}
+			case results := <-resultsChan:
+				if results.err != nil {
+					logger.Warningf("error occurred. trying again later: %v, %+v",
+						results.err, results.err)
+				} else if results.result.IsCritical() {
+					logger.Errorf("critical error occurred. exiting...: %+v", results.result)
+					exit <- 1
+					break LOOP
+				}
 			}
 		}
+		return nil
 	}
-	return nil
 }
 
 func tick(exit <-chan int, resultsChan chan<- results) {

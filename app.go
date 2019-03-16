@@ -8,6 +8,7 @@ import (
 	"gopkg.in/urfave/cli.v2"
 )
 
+// NewApp creates app
 func NewApp() *cli.App {
 	return &cli.App{
 		Usage:   "Update entries in Google Domains",
@@ -22,10 +23,11 @@ func NewApp() *cli.App {
 				Usage: "Show logs in addition to syslog",
 			},
 		},
-		Action: handlExit(Action),
+		Action: handlExit(Action(nil)),
 	}
 }
 
+// Before sets up logger
 func Before(c *cli.Context) error {
 	_ = logger.Init("goddns", c.Bool("verbose"), true, ioutil.Discard)
 	return nil
