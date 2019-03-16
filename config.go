@@ -6,11 +6,14 @@ import (
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
+const defaultIntervalSeconds = 60
+
 var validate = validator.New()
 var configFilename = "/usr/local/etc/goddns.toml"
 
 type Configs struct {
-	Domains []*Domain `toml:"domains" validate:"gt=0,dive,required"`
+	Interval int       `toml:"interval" validate:"gt=0"`
+	Domains  []*Domain `toml:"domains" validate:"gt=0,dive,required"`
 }
 
 type Domain struct {
@@ -22,7 +25,7 @@ type Domain struct {
 var Config *Configs
 
 func LoadConfig() error {
-	Config = &Configs{}
+	Config = &Configs{Interval: defaultIntervalSeconds}
 	if _, err := toml.DecodeFile(configFilename, Config); err != nil {
 		return xerrors.Errorf(": %w", err)
 	}
