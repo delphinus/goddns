@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/google/logger"
 	"gopkg.in/urfave/cli.v2"
 )
 
@@ -20,7 +20,7 @@ type results struct {
 var sig = make(chan os.Signal)
 
 func Action(*cli.Context) error {
-	_ = logger.Notice("start")
+	logger.Info("start")
 	exit := make(chan int)
 	resultsChan := make(chan results)
 	go tick(exit, resultsChan)
@@ -30,17 +30,17 @@ LOOP:
 		select {
 		case s := <-sig:
 			if s == syscall.SIGINT {
-				_ = logger.Warning("SIGINT received. exiting...")
+				logger.Warning("SIGINT received. exiting...")
 				exit <- 1
 				break LOOP
 			} else {
-				_ = logger.Warning(fmt.Sprintf("unknwon signal: %s received.", s))
+				logger.Warningf("unknwon signal: %s received.", s)
 			}
 		case results := <-resultsChan:
 			if results.err != nil {
-				_ = logger.Warning(fmt.Sprintf("error occurred. trying again later: %v, %+v", results.err, results.err))
+				logger.Warningf("error occurred. trying again later: %v, %+v", results.err, results.err)
 			} else if results.result.IsCritical() {
-				_ = logger.Crit(fmt.Sprintf("critical error occurred. exiting...: %+v", results.result))
+				logger.Errorf("critical error occurred. exiting...: %+v", results.result)
 				exit <- 1
 				break LOOP
 			}
@@ -65,16 +65,16 @@ LOOP:
 }
 
 func process(exit <-chan int, resultsChan chan<- results) {
-	_ = logger.Notice(fmt.Sprintf("loading %s", configFilename))
+	logger.Infof("loading %s", configFilename)
 	if err := LoadConfig(); err != nil {
 		resultsChan <- results{err: err}
 		return
 	}
 	for _, domain := range Config.Domains {
-		_ = logger.Notice(fmt.Sprintf("starting: %s", domain.Hostname))
+		logger.Infof("starting: %s", domain.Hostname)
 		result, err := Start(domain)
 		if result != nil {
-			_ = logger.Notice(fmt.Sprintf("result: %s", result))
+			logger.Infof("result: %s", result)
 		}
 		resultsChan <- results{result: result, err: err}
 	}

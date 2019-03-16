@@ -10,7 +10,6 @@ import (
 
 func TestStartAddress(t *testing.T) {
 	a := assert.New(t)
-	prepareLogger(t)
 	defer prepareAddressNG(t)()
 	_, err := Start(&Domain{Hostname: "example.com"})
 	a.Error(err)
@@ -19,7 +18,6 @@ func TestStartAddress(t *testing.T) {
 
 func TestStartCache(t *testing.T) {
 	a := assert.New(t)
-	prepareLogger(t)
 	defer prepareAddressOK(t, "192.168.1.1")()
 	defer prepareCacheNG(t)()
 	_, err := Start(&Domain{Hostname: "example.com"})
@@ -29,7 +27,6 @@ func TestStartCache(t *testing.T) {
 
 func TestStartIPIsSame(t *testing.T) {
 	a := assert.New(t)
-	prepareLogger(t)
 	defer prepareAddressOK(t, "192.168.1.1")()
 	defer prepareCacheOK(t)()
 	result, err := Start(&Domain{Hostname: "example.com"})
@@ -42,7 +39,6 @@ func TestStartIPIsSame(t *testing.T) {
 
 func TestStartUpdate(t *testing.T) {
 	a := assert.New(t)
-	prepareLogger(t)
 	defer prepareAddressOK(t, "192.168.100.100")()
 	defer prepareCacheOK(t)()
 	defer prepareUpdaterNG(t)()
@@ -53,7 +49,6 @@ func TestStartUpdate(t *testing.T) {
 
 func TestStartCritical(t *testing.T) {
 	a := assert.New(t)
-	prepareLogger(t)
 	defer prepareAddressOK(t, "192.168.100.100")()
 	defer prepareCacheOK(t)()
 	defer prepareUpdaterCritical(t)()
@@ -64,7 +59,6 @@ func TestStartCritical(t *testing.T) {
 
 func TestStartSave(t *testing.T) {
 	a := assert.New(t)
-	prepareLogger(t)
 	defer prepareAddressOK(t, "192.168.100.100")()
 	defer prepareCacheOK(t)()
 	defer prepareUpdaterOK(t)()
@@ -76,7 +70,6 @@ func TestStartSave(t *testing.T) {
 
 func TestStart(t *testing.T) {
 	a := assert.New(t)
-	prepareLogger(t)
 	defer prepareAddressOK(t, "192.168.100.100")()
 	defer prepareCacheOK(t)()
 	defer prepareUpdaterOK(t)()

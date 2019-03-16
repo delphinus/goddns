@@ -11,7 +11,6 @@ import (
 
 func TestTick(t *testing.T) {
 	a := assert.New(t)
-	prepareLogger(t)
 	defer prepareConfig(t)()
 	defer prepareAddressOK(t, "192.168.100.100")()
 	defer prepareCacheOK(t)()
@@ -33,7 +32,6 @@ func TestTick(t *testing.T) {
 
 func TestAction(t *testing.T) {
 	a := assert.New(t)
-	prepareLogger(t)
 	defer prepareConfig(t)()
 	defer prepareAddressOK(t, "192.168.100.100")()
 	defer prepareCacheOK(t)()

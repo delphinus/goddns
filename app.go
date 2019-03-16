@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/google/logger"
 	"gopkg.in/urfave/cli.v2"
 )
 
@@ -25,9 +26,7 @@ func NewApp() *cli.App {
 }
 
 func Before(c *cli.Context) error {
-	if err := Logger(c); err != nil {
-		return err
-	}
+	_ = logger.Init("goddns", c.Bool("verbose"), true, nil)
 	return nil
 }
 

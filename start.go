@@ -1,8 +1,7 @@
 package main
 
 import (
-	"fmt"
-
+	"github.com/google/logger"
 	"golang.org/x/xerrors"
 )
 
@@ -11,12 +10,12 @@ func Start(domain *Domain) (Result, error) {
 	if err != nil {
 		return nil, xerrors.Errorf(": %w", err)
 	}
-	logger.Notice(fmt.Sprintf("detected: %s", ip))
+	logger.Infof("detected: %s", ip)
 	cache, err := NewCache(domain)
 	if err != nil {
 		return nil, xerrors.Errorf(": %w", err)
 	}
-	logger.Notice(fmt.Sprintf("cache detected: %s", cache.Filename()))
+	logger.Infof("cache detected: %s", cache.Filename())
 	if cache.IsSame(ip) {
 		return NoNeedToUpdate(), nil
 	}
