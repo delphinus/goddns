@@ -1,11 +1,11 @@
 package main
 
 import (
-	"os"
+	"io/ioutil"
 
 	"github.com/google/logger"
 )
 
 func init() {
-	_ = logger.Init("goddns", false, false, os.Stderr)
+	_ = logger.Init("goddns", true, false, ioutil.Discard)
 }
