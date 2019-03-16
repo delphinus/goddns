@@ -10,8 +10,6 @@ import (
 	"gopkg.in/urfave/cli.v2"
 )
 
-var tickIntervalSeconds = 60 * time.Second
-
 type results struct {
 	result Result
 	err    error
@@ -50,7 +48,7 @@ LOOP:
 }
 
 func tick(exit <-chan int, resultsChan chan<- results) {
-	t := time.NewTicker(tickIntervalSeconds)
+	t := time.NewTicker(time.Duration(Config.Interval) * time.Second)
 	process(exit, resultsChan)
 LOOP:
 	for {

@@ -15,9 +15,9 @@ func TestTick(t *testing.T) {
 	defer prepareAddressOK(t, "192.168.100.100")()
 	defer prepareCacheOK(t)()
 	defer prepareUpdaterOK(t)()
-	defer prepareTick(t)()
 	exit := make(chan int)
 	resultsChan := make(chan results)
+	a.NoError(LoadConfig())
 	go tick(exit, resultsChan)
 	r1 := <-resultsChan
 	r2 := <-resultsChan
@@ -36,7 +36,6 @@ func TestAction(t *testing.T) {
 	defer prepareAddressOK(t, "192.168.100.100")()
 	defer prepareCacheOK(t)()
 	defer prepareUpdaterOK(t)()
-	defer prepareTick(t)()
 	go func() {
 		time.Sleep(1500 * time.Millisecond)
 		t.Logf("sending sig")
@@ -44,12 +43,4 @@ func TestAction(t *testing.T) {
 	}()
 	a.NoError(Action(&cli.Context{}))
 	time.Sleep(1 * time.Second)
-}
-
-func prepareTick(t *testing.T) func() {
-	original := tickIntervalSeconds
-	tickIntervalSeconds = time.Second
-	return func() {
-		tickIntervalSeconds = original
-	}
 }

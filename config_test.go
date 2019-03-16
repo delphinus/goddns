@@ -38,7 +38,7 @@ func TestLoadConfigValid(t *testing.T) {
 
 func prepareConfig(t *testing.T) func() {
 	return prepareConfigDetail(t, `
-interval = 120
+interval = 1
 
 [[domains]]
 username = 'hogehogeo'
