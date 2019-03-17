@@ -42,7 +42,7 @@ func TestAction(t *testing.T) {
 	sig := make(chan os.Signal)
 	go func() {
 		time.Sleep(1500 * time.Millisecond)
-		t.Logf("sending sig")
+		t.Log("sending sig")
 		sig <- syscall.SIGINT
 	}()
 	a.NoError(Action(sig)(&cli.Context{}))
