@@ -48,3 +48,22 @@ func TestAction(t *testing.T) {
 	a.NoError(Action(sig)(&cli.Context{}))
 	time.Sleep(1 * time.Second)
 }
+
+func TestActionReloadConfig(t *testing.T) {
+	a := assert.New(t)
+	defer prepareConfig(t)()
+	defer prepareAddressOK(t, "192.168.100.100")()
+	defer prepareCacheOK(t)()
+	defer prepareUpdaterOK(t)()
+	sig := make(chan os.Signal)
+	go func() {
+		time.Sleep(1500 * time.Millisecond)
+		t.Log("sending SIGHUP")
+		sig <- syscall.SIGHUP
+		time.Sleep(2500 * time.Millisecond)
+		t.Log("sending SIGINT")
+		sig <- syscall.SIGINT
+	}()
+	a.NoError(Action(sig)(&cli.Context{}))
+	time.Sleep(3 * time.Second)
+}
