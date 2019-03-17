@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"time"
@@ -13,7 +15,7 @@ import (
 var cacheDir = "/usr/local/var/cache/goddns"
 var timeNow = time.Now // for testing
 var updateIntervalSeconds = time.Duration(60*5) * time.Second
-var osOpenFile = os.OpenFile // for testing
+var writeFile = ioutil.WriteFile // for testing
 
 type Cache interface {
 	CanUpdate() error
@@ -40,7 +42,7 @@ func NewCache(domain *Domain) (Cache, error) {
 		return cache, nil
 	}
 	if _, err := toml.DecodeFile(cache.filename, cache); err != nil {
-		return nil, xerrors.Errorf(": %w", err)
+		return nil, xerrors.Errorf("%s: %w", cache.filename, err)
 	}
 	if err := validate.Struct(cache); err != nil {
 		return nil, xerrors.Errorf(": %w", err)
@@ -76,14 +78,11 @@ func (c *Caches) Save(ip string) error {
 	if err := validate.Struct(c); err != nil {
 		return xerrors.Errorf(": %w", err)
 	}
-	w, err := osOpenFile(c.filename, os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
-		return xerrors.Errorf(": %w", err)
-	}
+	w := bytes.NewBuffer(nil)
 	if err := toml.NewEncoder(w).Encode(c); err != nil {
 		return xerrors.Errorf(": %w", err)
 	}
-	if err := w.Close(); err != nil {
+	if err := writeFile(c.filename, w.Bytes(), 0644); err != nil {
 		return xerrors.Errorf(": %w", err)
 	}
 	return nil
