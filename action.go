@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/logger"
+	"golang.org/x/xerrors"
 	"gopkg.in/urfave/cli.v2"
 )
 
@@ -22,58 +23,95 @@ func Action(sig chan os.Signal) func(*cli.Context) error {
 	}
 	return func(*cli.Context) error {
 		logger.Info("start")
+		config, err := LoadConfig()
+		if err != nil {
+			return xerrors.Errorf(": %w", err)
+		}
+		newConfig := make(chan *Configs)
 		exit := make(chan int)
 		resultsChan := make(chan results)
-		go tick(exit, resultsChan)
-		signal.Notify(sig, syscall.SIGINT)
+		go tick(config, newConfig, exit, resultsChan)
+		signal.Notify(sig, syscall.SIGINT, syscall.SIGHUP)
 	LOOP:
 		for {
 			select {
 			case s := <-sig:
-				if s == syscall.SIGINT {
-					logger.Warning("SIGINT received. exiting...")
-					exit <- 1
+				if manageSig(s, newConfig) {
 					break LOOP
-				} else {
-					logger.Warningf("unknwon signal: %s received.", s)
 				}
-			case results := <-resultsChan:
-				if results.err != nil {
-					logger.Warningf("error occurred. trying again later: %v, %+v",
-						results.err, results.err)
-				} else if results.result.IsCritical() {
-					logger.Errorf("critical error occurred. exiting...: %+v", results.result)
-					exit <- 1
+			case r := <-resultsChan:
+				if manageResults(r) {
 					break LOOP
 				}
 			}
 		}
+		exit <- 1
 		return nil
 	}
 }
 
-func tick(exit <-chan int, resultsChan chan<- results) {
-	t := time.NewTicker(time.Duration(Config.Interval) * time.Second)
-	process(exit, resultsChan)
+func manageSig(s os.Signal, newConfig chan<- *Configs) bool {
+	switch s {
+	case syscall.SIGINT:
+		logger.Warning("SIGINT received. exiting...")
+		return true
+	case syscall.SIGHUP:
+		logger.Warning("SIGHUP received. reloading configs...")
+		config, err := LoadConfig()
+		if err != nil {
+			logger.Warningf("%s", xerrors.Errorf("config has errors: %w", err))
+		} else {
+			newConfig <- config
+		}
+	default:
+		logger.Warningf("unknwon signal: %s received.", s)
+	}
+	return false
+}
+
+func manageResults(r results) bool {
+	if r.err != nil {
+		logger.Warningf("error occurred. trying again later: %v, %+v", r.err, r.err)
+		return false
+	}
+	if r.result.IsCritical() {
+		logger.Errorf("critical error occurred. exiting...: %+v", r.result)
+		return true
+	}
+	return false
+}
+
+func tick(
+	config *Configs,
+	newConfig <-chan *Configs,
+	exit <-chan int,
+	resultsChan chan<- results,
+) {
+	t := newTicker(config)
+	process(config, exit, resultsChan)
 LOOP:
 	for {
 		select {
+		case c := <-newConfig:
+			config = c
+			t.Stop()
+			t = newTicker(config)
 		case <-exit:
 			break LOOP
 		case <-t.C:
-			process(exit, resultsChan)
+			process(config, exit, resultsChan)
 		}
 	}
 	t.Stop()
 }
 
-func process(exit <-chan int, resultsChan chan<- results) {
+func newTicker(config *Configs) *time.Ticker {
+	return time.NewTicker(time.Duration(config.Interval) * time.Second)
+}
+
+func process(config *Configs, exit <-chan int, resultsChan chan<- results) {
 	logger.Infof("loading %s", configFilename)
-	if err := LoadConfig(); err != nil {
-		resultsChan <- results{err: err}
-		return
-	}
-	for _, domain := range Config.Domains {
+	for _, domain := range config.Domains {
 		logger.Infof("starting: %s", domain.Hostname)
 		result, err := Start(domain)
 		if result != nil {

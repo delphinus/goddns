@@ -16,10 +16,12 @@ func TestTick(t *testing.T) {
 	defer prepareAddressOK(t, "192.168.100.100")()
 	defer prepareCacheOK(t)()
 	defer prepareUpdaterOK(t)()
+	newConfig := make(chan *Configs)
 	exit := make(chan int)
 	resultsChan := make(chan results)
-	a.NoError(LoadConfig())
-	go tick(exit, resultsChan)
+	config, err := LoadConfig()
+	a.NoError(err)
+	go tick(config, newConfig, exit, resultsChan)
 	r1 := <-resultsChan
 	r2 := <-resultsChan
 	exit <- 1

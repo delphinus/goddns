@@ -12,7 +12,7 @@ import (
 func TestLoadConfigNotTOML(t *testing.T) {
 	a := assert.New(t)
 	defer prepareConfigDetail(t, `hogehogeo`)()
-	err := LoadConfig()
+	_, err := LoadConfig()
 	a.Error(err)
 	t.Logf("err: %s", err)
 }
@@ -25,7 +25,7 @@ username = 'hogehogeo'
 password = 'fugafugao'
 hostname = '123.invalid.example.com'
 `)()
-	err := LoadConfig()
+	_, err := LoadConfig()
 	a.Error(err)
 	t.Logf("err: %s", err)
 }
@@ -33,7 +33,8 @@ hostname = '123.invalid.example.com'
 func TestLoadConfigValid(t *testing.T) {
 	a := assert.New(t)
 	defer prepareConfig(t)()
-	a.NoError(LoadConfig())
+	_, err := LoadConfig()
+	a.NoError(err)
 }
 
 func prepareConfig(t *testing.T) func() {
