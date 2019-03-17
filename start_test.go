@@ -85,11 +85,11 @@ func TestStart(t *testing.T) {
 }
 
 func prepareCacheSaveNG(t *testing.T) func() {
-	original := osOpenFile
-	osOpenFile = func(string, int, os.FileMode) (*os.File, error) {
-		return nil, xerrors.New("dummy")
+	original := writeFile
+	writeFile = func(string, []byte, os.FileMode) error {
+		return xerrors.New("dummy")
 	}
 	return func() {
-		osOpenFile = original
+		writeFile = original
 	}
 }
