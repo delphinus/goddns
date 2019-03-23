@@ -10,26 +10,29 @@ import (
 
 func TestStartAddress(t *testing.T) {
 	a := assert.New(t)
-	defer prepareAddressNG(t)()
-	_, err := Start(&Domain{Hostname: "example.com"})
+	env := NewEnv()
+	defer prepareAddressNG(t, env)()
+	_, err := Start(env, &Domain{Hostname: "example.com"})
 	a.Error(err)
 	t.Logf("err: %v", err)
 }
 
 func TestStartCache(t *testing.T) {
 	a := assert.New(t)
-	defer prepareAddressOK(t, "192.168.1.1")()
-	defer prepareCacheNG(t)()
-	_, err := Start(&Domain{Hostname: "example.com"})
+	env := NewEnv()
+	defer prepareAddressOK(t, env, "192.168.1.1")()
+	defer prepareCacheNG(t, env)()
+	_, err := Start(env, &Domain{Hostname: "example.com"})
 	a.Error(err)
 	t.Logf("err: %v", err)
 }
 
 func TestStartIPIsSame(t *testing.T) {
 	a := assert.New(t)
-	defer prepareAddressOK(t, "192.168.1.1")()
-	defer prepareCacheOK(t)()
-	result, err := Start(&Domain{Hostname: "example.com"})
+	env := NewEnv()
+	defer prepareAddressOK(t, env, "192.168.1.1")()
+	defer prepareCacheOK(t, env)()
+	result, err := Start(env, &Domain{Hostname: "example.com"})
 	a.NoError(err)
 	a.Implements((*Result)(nil), result)
 	a.True(result.IsSuccessful())
@@ -39,20 +42,22 @@ func TestStartIPIsSame(t *testing.T) {
 
 func TestStartUpdate(t *testing.T) {
 	a := assert.New(t)
-	defer prepareAddressOK(t, "192.168.100.100")()
-	defer prepareCacheOK(t)()
-	defer prepareUpdaterNG(t)()
-	_, err := Start(&Domain{Hostname: "example.com"})
+	env := NewEnv()
+	defer prepareAddressOK(t, env, "192.168.100.100")()
+	defer prepareCacheOK(t, env)()
+	defer prepareUpdaterNG(t, env)()
+	_, err := Start(env, &Domain{Hostname: "example.com"})
 	a.Error(err)
 	t.Logf("err: %v", err)
 }
 
 func TestStartCritical(t *testing.T) {
 	a := assert.New(t)
-	defer prepareAddressOK(t, "192.168.100.100")()
-	defer prepareCacheOK(t)()
-	defer prepareUpdaterCritical(t)()
-	result, err := Start(&Domain{Hostname: "example.com"})
+	env := NewEnv()
+	defer prepareAddressOK(t, env, "192.168.100.100")()
+	defer prepareCacheOK(t, env)()
+	defer prepareUpdaterCritical(t, env)()
+	result, err := Start(env, &Domain{Hostname: "example.com"})
 	a.NoError(err)
 	a.Implements((*Result)(nil), result)
 	a.False(result.IsSuccessful())
@@ -62,21 +67,23 @@ func TestStartCritical(t *testing.T) {
 
 func TestStartSave(t *testing.T) {
 	a := assert.New(t)
-	defer prepareAddressOK(t, "192.168.100.100")()
-	defer prepareCacheOK(t)()
-	defer prepareUpdaterOK(t)()
-	defer prepareCacheSaveNG(t)()
-	_, err := Start(&Domain{Hostname: "example.com"})
+	env := NewEnv()
+	defer prepareAddressOK(t, env, "192.168.100.100")()
+	defer prepareCacheOK(t, env)()
+	defer prepareUpdaterOK(t, env)()
+	prepareCacheSaveNG(t, env)
+	_, err := Start(env, &Domain{Hostname: "example.com"})
 	a.Error(err)
 	t.Logf("err: %v", err)
 }
 
 func TestStart(t *testing.T) {
 	a := assert.New(t)
-	defer prepareAddressOK(t, "192.168.100.100")()
-	defer prepareCacheOK(t)()
-	defer prepareUpdaterOK(t)()
-	result, err := Start(&Domain{Hostname: "example.com"})
+	env := NewEnv()
+	defer prepareAddressOK(t, env, "192.168.100.100")()
+	defer prepareCacheOK(t, env)()
+	defer prepareUpdaterOK(t, env)()
+	result, err := Start(env, &Domain{Hostname: "example.com"})
 	a.NoError(err)
 	a.Implements((*Result)(nil), result)
 	a.True(result.IsSuccessful())
@@ -84,12 +91,8 @@ func TestStart(t *testing.T) {
 	t.Logf("result: %s", result)
 }
 
-func prepareCacheSaveNG(t *testing.T) func() {
-	original := writeFile
-	writeFile = func(string, []byte, os.FileMode) error {
+func prepareCacheSaveNG(t *testing.T, env *Env) {
+	env.WriteFile = func(string, []byte, os.FileMode) error {
 		return xerrors.New("dummy")
-	}
-	return func() {
-		writeFile = original
 	}
 }

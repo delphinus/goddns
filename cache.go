@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"time"
@@ -11,11 +10,6 @@ import (
 	"github.com/BurntSushi/toml"
 	"golang.org/x/xerrors"
 )
-
-var cacheDir = "/usr/local/var/cache/goddns"
-var timeNow = time.Now // for testing
-var updateIntervalSeconds = time.Duration(60*5) * time.Second
-var writeFile = ioutil.WriteFile // for testing
 
 // Cache is an interface to deal with caches
 type Cache interface {
@@ -31,15 +25,17 @@ type Caches struct {
 	CreatedAt    time.Time `toml:"createdAt" validate:"required"`
 	UpdatedAt    time.Time `toml:"updatedAt" validate:"required"`
 	CanUpdatedIn time.Time `toml:"canUpdatedIn" validate:"required"`
+	env          *Env
 	domain       *Domain
 	filename     string
 }
 
 // NewCache creates Cache
-func NewCache(domain *Domain) (Cache, error) {
+func NewCache(env *Env, domain *Domain) (Cache, error) {
 	cache := &Caches{
+		env:      env,
 		domain:   domain,
-		filename: path.Join(cacheDir, domain.Hostname+".cache"),
+		filename: path.Join(env.CacheDir, domain.Hostname+".cache"),
 	}
 	if st, err := os.Stat(cache.filename); os.IsNotExist(err) || st.IsDir() {
 		return cache, nil
@@ -47,7 +43,7 @@ func NewCache(domain *Domain) (Cache, error) {
 	if _, err := toml.DecodeFile(cache.filename, cache); err != nil {
 		return nil, xerrors.Errorf("%s: %w", cache.filename, err)
 	}
-	if err := validate.Struct(cache); err != nil {
+	if err := env.Validate.Struct(cache); err != nil {
 		return nil, xerrors.Errorf(": %w", err)
 	}
 	return cache, nil
@@ -55,7 +51,7 @@ func NewCache(domain *Domain) (Cache, error) {
 
 // CanUpdate detects if the cache can be updated
 func (c *Caches) CanUpdate() error {
-	if c.CanUpdatedIn.After(timeNow()) {
+	if c.CanUpdatedIn.After(c.env.TimeNow()) {
 		return xerrors.New(fmt.Sprintf("%s cannot be updated in %s",
 			c.domain.Hostname, c.CanUpdatedIn))
 	}
@@ -70,26 +66,26 @@ func (c *Caches) IsSame(ip string) bool { return ip == c.IP }
 
 // Save saves caches into files
 func (c *Caches) Save(ip string) error {
-	if st, err := os.Stat(cacheDir); os.IsNotExist(err) || !st.IsDir() {
-		if err := os.MkdirAll(cacheDir, 0750); err != nil {
+	if st, err := os.Stat(c.env.CacheDir); os.IsNotExist(err) || !st.IsDir() {
+		if err := os.MkdirAll(c.env.CacheDir, 0750); err != nil {
 			return xerrors.Errorf(": %w", err)
 		}
 	}
-	now := timeNow()
+	now := c.env.TimeNow()
 	c.IP = ip
 	c.UpdatedAt = now
-	c.CanUpdatedIn = now.Add(updateIntervalSeconds)
+	c.CanUpdatedIn = now.Add(c.env.UpdateInterval)
 	if c.CreatedAt.IsZero() {
 		c.CreatedAt = now
 	}
-	if err := validate.Struct(c); err != nil {
+	if err := c.env.Validate.Struct(c); err != nil {
 		return xerrors.Errorf(": %w", err)
 	}
 	w := bytes.NewBuffer(nil)
 	if err := toml.NewEncoder(w).Encode(c); err != nil {
 		return xerrors.Errorf(": %w", err)
 	}
-	if err := writeFile(c.filename, w.Bytes(), 0644); err != nil {
+	if err := c.env.WriteFile(c.filename, w.Bytes(), 0644); err != nil {
 		return xerrors.Errorf(": %w", err)
 	}
 	return nil

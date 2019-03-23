@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"golang.org/x/xerrors"
 )
-
-var updaterUrl = "https://domains.google.com/nic/update"
 
 // Updater is an interface to update
 type Updater interface {
@@ -17,28 +16,29 @@ type Updater interface {
 
 // Updaters is an implementation of Updater
 type Updaters struct {
+	env    *Env
 	domain *Domain
 	ip     string
 }
 
 // NewUpdater creates Updater
-func NewUpdater(domain *Domain, ip string) Updater {
-	return &Updaters{domain, ip}
+func NewUpdater(env *Env, domain *Domain, ip string) Updater {
+	return &Updaters{env, domain, ip}
 }
 
 // Update updates the IP
 func (u *Updaters) Update() (Result, error) {
-	url, err := u.url()
+	req, err := u.req()
 	if err != nil {
 		return nil, xerrors.Errorf(": %w", err)
 	}
-	resp, err := http.Get(url)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, xerrors.Errorf(": %w", err)
 	}
 	if resp.StatusCode/100 != 2 {
 		return nil, xerrors.New(fmt.Sprintf("%s returned %s",
-			updaterUrl, resp.Status))
+			u.env.UpdaterURL, resp.Status))
 	}
 	result, err := NewResult(resp.Body)
 	if err != nil {
@@ -47,15 +47,18 @@ func (u *Updaters) Update() (Result, error) {
 	return result, nil
 }
 
-func (u *Updaters) url() (string, error) {
+func (u *Updaters) req() (*http.Request, error) {
 	v := url.Values{}
 	v.Set("hostname", u.domain.Hostname)
 	v.Set("myip", u.ip)
-	urls, err := url.Parse(updaterUrl)
+	req, err := http.NewRequest(
+		"POST",
+		u.env.UpdaterURL,
+		strings.NewReader(v.Encode()),
+	)
 	if err != nil {
-		return "", xerrors.Errorf(": %w", err)
+		return nil, xerrors.Errorf(": %w", err)
 	}
-	urls.User = url.UserPassword(u.domain.Username, u.domain.Password)
-	urls.RawQuery = v.Encode()
-	return urls.String(), nil
+	req.SetBasicAuth(u.domain.Username, u.domain.Password)
+	return req, nil
 }

@@ -10,20 +10,6 @@ import (
 	"golang.org/x/xerrors"
 )
 
-var messages = map[string]string{
-	"nohost": "The hostname does not exist, " +
-		"or does not have Dynamic DNS enabled.",
-	"badauth": "The username / password combination " +
-		"is not valid for the specified host.",
-	"notfqdn": "The supplied hostname " +
-		"is not a valid fully-qualified domain name.",
-	"badagent": "Your Dynamic DNS client is making bad requests. " +
-		"Ensure the user agent is set in the request.",
-	"abuse": "Dynamic DNS access for the hostname has been blocked " +
-		"due to failure to interpret previous responses correctly.",
-	"911": "An error happened on our end. Wait 5 minutes and retry.",
-}
-
 // Result is an interface to deal with results
 type Result interface {
 	IsSuccessful() bool
@@ -44,8 +30,9 @@ func NoNeedToUpdate() Result { return noNeedToUpdate{} }
 
 // Results is a implementation of Result
 type Results struct {
-	code string
-	ip   string
+	code     string
+	ip       string
+	messages map[string]string
 }
 
 // NewResult parses bytes and make results
@@ -55,7 +42,22 @@ func NewResult(r io.Reader) (Result, error) {
 		return nil, xerrors.Errorf(": %w", err)
 	}
 	parts := bytes.SplitN(content, []byte{' '}, 2)
-	result := &Results{code: string(parts[0])}
+	result := &Results{
+		code: string(parts[0]),
+		messages: map[string]string{
+			"nohost": "The hostname does not exist, " +
+				"or does not have Dynamic DNS enabled.",
+			"badauth": "The username / password combination " +
+				"is not valid for the specified host.",
+			"notfqdn": "The supplied hostname " +
+				"is not a valid fully-qualified domain name.",
+			"badagent": "Your Dynamic DNS client is making bad requests. " +
+				"Ensure the user agent is set in the request.",
+			"abuse": "Dynamic DNS access for the hostname has been blocked " +
+				"due to failure to interpret previous responses correctly.",
+			"911": "An error happened on our end. Wait 5 minutes and retry.",
+		},
+	}
 	if len(parts) > 1 {
 		result.ip = string(parts[1])
 	}
@@ -80,13 +82,13 @@ func (r *Results) String() string {
 	if r.IsSuccessful() {
 		return fmt.Sprintf("Successful! code: %s, ip: %s", r.code, r.ip)
 	}
-	return fmt.Sprintf("Failed... code: %s, %s", r.code, messages[r.code])
+	return fmt.Sprintf("Failed... code: %s, %s", r.code, r.messages[r.code])
 }
 
 func (r *Results) isValid() bool {
 	if r.code == "good" || r.code == "nochg" {
 		return net.ParseIP(r.ip) != nil
 	}
-	_, ok := messages[r.code]
+	_, ok := r.messages[r.code]
 	return ok
 }
