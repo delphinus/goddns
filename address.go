@@ -13,6 +13,7 @@ import (
 // var checkipUrl = "https://domains.google.com/checkip"
 var checkipUrl = "https://api.ipify.org"
 
+// Address detects my IP address
 func Address() (string, error) {
 	resp, err := http.Get(checkipUrl)
 	if err != nil {

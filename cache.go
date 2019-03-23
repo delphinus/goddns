@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"time"
@@ -13,8 +15,9 @@ import (
 var cacheDir = "/usr/local/var/cache/goddns"
 var timeNow = time.Now // for testing
 var updateIntervalSeconds = time.Duration(60*5) * time.Second
-var osOpenFile = os.OpenFile // for testing
+var writeFile = ioutil.WriteFile // for testing
 
+// Cache is an interface to deal with caches
 type Cache interface {
 	CanUpdate() error
 	Filename() string
@@ -22,6 +25,7 @@ type Cache interface {
 	Save(ip string) error
 }
 
+// Caches is an implementation of Cache
 type Caches struct {
 	IP           string    `toml:"ip" validate:"ip,required"`
 	CreatedAt    time.Time `toml:"createdAt" validate:"required"`
@@ -31,6 +35,7 @@ type Caches struct {
 	filename     string
 }
 
+// NewCache creates Cache
 func NewCache(domain *Domain) (Cache, error) {
 	cache := &Caches{
 		domain:   domain,
@@ -40,7 +45,7 @@ func NewCache(domain *Domain) (Cache, error) {
 		return cache, nil
 	}
 	if _, err := toml.DecodeFile(cache.filename, cache); err != nil {
-		return nil, xerrors.Errorf(": %w", err)
+		return nil, xerrors.Errorf("%s: %w", cache.filename, err)
 	}
 	if err := validate.Struct(cache); err != nil {
 		return nil, xerrors.Errorf(": %w", err)
@@ -48,6 +53,7 @@ func NewCache(domain *Domain) (Cache, error) {
 	return cache, nil
 }
 
+// CanUpdate detects if the cache can be updated
 func (c *Caches) CanUpdate() error {
 	if c.CanUpdatedIn.After(timeNow()) {
 		return xerrors.New(fmt.Sprintf("%s cannot be updated in %s",
@@ -56,13 +62,16 @@ func (c *Caches) CanUpdate() error {
 	return nil
 }
 
+// Filename returns the filename of caches
 func (c *Caches) Filename() string { return c.filename }
 
+// IsSame detects if the cache is the same as supplied IPs
 func (c *Caches) IsSame(ip string) bool { return ip == c.IP }
 
+// Save saves caches into files
 func (c *Caches) Save(ip string) error {
 	if st, err := os.Stat(cacheDir); os.IsNotExist(err) || !st.IsDir() {
-		if err := os.MkdirAll(cacheDir, 0775); err != nil {
+		if err := os.MkdirAll(cacheDir, 0750); err != nil {
 			return xerrors.Errorf(": %w", err)
 		}
 	}
@@ -76,14 +85,11 @@ func (c *Caches) Save(ip string) error {
 	if err := validate.Struct(c); err != nil {
 		return xerrors.Errorf(": %w", err)
 	}
-	w, err := osOpenFile(c.filename, os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
-		return xerrors.Errorf(": %w", err)
-	}
+	w := bytes.NewBuffer(nil)
 	if err := toml.NewEncoder(w).Encode(c); err != nil {
 		return xerrors.Errorf(": %w", err)
 	}
-	if err := w.Close(); err != nil {
+	if err := writeFile(c.filename, w.Bytes(), 0644); err != nil {
 		return xerrors.Errorf(": %w", err)
 	}
 	return nil

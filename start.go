@@ -5,6 +5,7 @@ import (
 	"golang.org/x/xerrors"
 )
 
+// Start starts the main logic
 func Start(domain *Domain) (Result, error) {
 	ip, err := Address()
 	if err != nil {
@@ -19,7 +20,7 @@ func Start(domain *Domain) (Result, error) {
 	if cache.IsSame(ip) {
 		return NoNeedToUpdate(), nil
 	}
-	if err := cache.CanUpdate(); err != nil {
+	if err = cache.CanUpdate(); err != nil {
 		return nil, xerrors.Errorf(": %w", err)
 	}
 	updater := NewUpdater(domain, ip)

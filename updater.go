@@ -10,17 +10,23 @@ import (
 
 var updaterUrl = "https://domains.google.com/nic/update"
 
+// Updater is an interface to update
 type Updater interface {
 	Update() (Result, error)
 }
 
+// Updaters is an implementation of Updater
 type Updaters struct {
 	domain *Domain
 	ip     string
 }
 
-func NewUpdater(domain *Domain, ip string) Updater { return &Updaters{domain, ip} }
+// NewUpdater creates Updater
+func NewUpdater(domain *Domain, ip string) Updater {
+	return &Updaters{domain, ip}
+}
 
+// Update updates the IP
 func (u *Updaters) Update() (Result, error) {
 	url, err := u.url()
 	if err != nil {
@@ -31,7 +37,8 @@ func (u *Updaters) Update() (Result, error) {
 		return nil, xerrors.Errorf(": %w", err)
 	}
 	if resp.StatusCode/100 != 2 {
-		return nil, xerrors.New(fmt.Sprintf("%s returned %s", updaterUrl, resp.Status))
+		return nil, xerrors.New(fmt.Sprintf("%s returned %s",
+			updaterUrl, resp.Status))
 	}
 	result, err := NewResult(resp.Body)
 	if err != nil {

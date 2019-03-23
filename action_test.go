@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"syscall"
 	"testing"
 	"time"
@@ -15,10 +16,12 @@ func TestTick(t *testing.T) {
 	defer prepareAddressOK(t, "192.168.100.100")()
 	defer prepareCacheOK(t)()
 	defer prepareUpdaterOK(t)()
-	defer prepareTick(t)()
+	newConfig := make(chan *Configs)
 	exit := make(chan int)
 	resultsChan := make(chan results)
-	go tick(exit, resultsChan)
+	config, err := LoadConfig()
+	a.NoError(err)
+	go tick(config, newConfig, exit, resultsChan)
 	r1 := <-resultsChan
 	r2 := <-resultsChan
 	exit <- 1
@@ -36,20 +39,31 @@ func TestAction(t *testing.T) {
 	defer prepareAddressOK(t, "192.168.100.100")()
 	defer prepareCacheOK(t)()
 	defer prepareUpdaterOK(t)()
-	defer prepareTick(t)()
+	sig := make(chan os.Signal)
 	go func() {
 		time.Sleep(1500 * time.Millisecond)
-		t.Logf("sending sig")
+		t.Log("sending sig")
 		sig <- syscall.SIGINT
 	}()
-	a.NoError(Action(&cli.Context{}))
+	a.NoError(Action(sig)(&cli.Context{}))
 	time.Sleep(1 * time.Second)
 }
 
-func prepareTick(t *testing.T) func() {
-	original := tickIntervalSeconds
-	tickIntervalSeconds = time.Second
-	return func() {
-		tickIntervalSeconds = original
-	}
+func TestActionReloadConfig(t *testing.T) {
+	a := assert.New(t)
+	defer prepareConfig(t)()
+	defer prepareAddressOK(t, "192.168.100.100")()
+	defer prepareCacheOK(t)()
+	defer prepareUpdaterOK(t)()
+	sig := make(chan os.Signal)
+	go func() {
+		time.Sleep(1500 * time.Millisecond)
+		t.Log("sending SIGHUP")
+		sig <- syscall.SIGHUP
+		time.Sleep(2500 * time.Millisecond)
+		t.Log("sending SIGINT")
+		sig <- syscall.SIGINT
+	}()
+	a.NoError(Action(sig)(&cli.Context{}))
+	time.Sleep(3 * time.Second)
 }

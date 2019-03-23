@@ -52,9 +52,12 @@ func TestStartCritical(t *testing.T) {
 	defer prepareAddressOK(t, "192.168.100.100")()
 	defer prepareCacheOK(t)()
 	defer prepareUpdaterCritical(t)()
-	_, err := Start(&Domain{Hostname: "example.com"})
-	a.Error(err)
-	t.Logf("err: %v", err)
+	result, err := Start(&Domain{Hostname: "example.com"})
+	a.NoError(err)
+	a.Implements((*Result)(nil), result)
+	a.False(result.IsSuccessful())
+	a.True(result.IsCritical())
+	t.Logf("result: %v", result)
 }
 
 func TestStartSave(t *testing.T) {
@@ -82,11 +85,11 @@ func TestStart(t *testing.T) {
 }
 
 func prepareCacheSaveNG(t *testing.T) func() {
-	original := osOpenFile
-	osOpenFile = func(string, int, os.FileMode) (*os.File, error) {
-		return nil, xerrors.New("dummy")
+	original := writeFile
+	writeFile = func(string, []byte, os.FileMode) error {
+		return xerrors.New("dummy")
 	}
 	return func() {
-		osOpenFile = original
+		writeFile = original
 	}
 }

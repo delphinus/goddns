@@ -14,8 +14,8 @@ func TestNewCache(t *testing.T) {
 	a := assert.New(t)
 	for _, c := range []struct {
 		noCache  bool
-		cache    string
 		hasError bool
+		cache    string
 		pattern  string
 	}{
 		{noCache: true, pattern: "no cache"},
@@ -42,13 +42,14 @@ func TestNewCache(t *testing.T) {
 		func() {
 			defer prepareCacheDetail(t, c.cache)()
 			cache, err := NewCache(&Domain{Hostname: "example.com"})
-			if c.noCache {
+			switch {
+			case c.noCache:
 				a.NoError(err, c.pattern)
 				a.Implements((*Cache)(nil), cache, c.pattern)
-			} else if c.hasError {
+			case c.hasError:
 				a.Error(err, c.pattern)
 				t.Logf("err: %v", err)
-			} else {
+			default:
 				a.NoError(err, c.pattern)
 				a.Implements((*Cache)(nil), cache, c.pattern)
 			}
