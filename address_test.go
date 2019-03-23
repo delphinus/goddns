@@ -13,8 +13,8 @@ func TestAddress(t *testing.T) {
 	a := assert.New(t)
 	for _, c := range []struct {
 		statusOK bool
-		body     string
 		hasError bool
+		body     string
 	}{
 		{statusOK: false, body: "", hasError: true},
 		{statusOK: true, body: "hoge", hasError: true},

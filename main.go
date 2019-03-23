@@ -3,5 +3,5 @@ package main
 import "os"
 
 func main() {
-	NewApp().Run(os.Args)
+	_ = NewApp().Run(os.Args)
 }
