@@ -4,7 +4,8 @@ jobs:
   build:
     docker:
       - image: circleci/golang
-    working_directory: /go/src/github.com/delphinus/goddns
+    environment:
+      GO111MODULE: 'on'
     steps:
       - checkout
       - run: go version
