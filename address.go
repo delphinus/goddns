@@ -9,7 +9,9 @@ import (
 	"golang.org/x/xerrors"
 )
 
-var checkipUrl = "https://domains.google.com/checkip"
+// TODO: This endpoint shows IPv6 address if avilable.  But I want IPv4 Adress.
+// var checkipUrl = "https://domains.google.com/checkip"
+var checkipUrl = "https://api.ipify.org"
 
 func Address() (string, error) {
 	resp, err := http.Get(checkipUrl)
