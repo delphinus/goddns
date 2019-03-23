@@ -11,34 +11,37 @@ import (
 
 func TestLoadConfigNotTOML(t *testing.T) {
 	a := assert.New(t)
-	defer prepareConfigDetail(t, `hogehogeo`)()
-	_, err := LoadConfig()
+	env := NewEnv()
+	defer prepareConfigDetail(t, env, `hogehogeo`)()
+	_, err := LoadConfig(env)
 	a.Error(err)
 	t.Logf("err: %s", err)
 }
 
 func TestLoadConfigInvalid(t *testing.T) {
 	a := assert.New(t)
-	defer prepareConfigDetail(t, `
+	env := NewEnv()
+	defer prepareConfigDetail(t, env, `
 [[domains]]
 username = 'hogehogeo'
 password = 'fugafugao'
 hostname = '123.invalid.example.com'
 `)()
-	_, err := LoadConfig()
+	_, err := LoadConfig(env)
 	a.Error(err)
 	t.Logf("err: %s", err)
 }
 
 func TestLoadConfigValid(t *testing.T) {
 	a := assert.New(t)
-	defer prepareConfig(t)()
-	_, err := LoadConfig()
+	env := NewEnv()
+	defer prepareConfig(t, env)()
+	_, err := LoadConfig(env)
 	a.NoError(err)
 }
 
-func prepareConfig(t *testing.T) func() {
-	return prepareConfigDetail(t, `
+func prepareConfig(t *testing.T, env *Env) func() {
+	return prepareConfigDetail(t, env, `
 interval = 1
 
 [[domains]]
@@ -53,15 +56,13 @@ hostname = 'host2.example.com'
 `)
 }
 
-func prepareConfigDetail(t *testing.T, config string) func() {
+func prepareConfigDetail(t *testing.T, env *Env, config string) func() {
 	a := assert.New(t)
 	tmpDir, err := ioutil.TempDir("", "")
 	a.NoError(err)
-	original := configFilename
-	configFilename = path.Join(tmpDir, "goddns.toml")
-	a.NoError(ioutil.WriteFile(configFilename, []byte(config), 0600))
+	env.ConfigFilename = path.Join(tmpDir, "goddns.toml")
+	a.NoError(ioutil.WriteFile(env.ConfigFilename, []byte(config), 0600))
 	return func() {
 		a.NoError(os.RemoveAll(tmpDir))
-		configFilename = original
 	}
 }

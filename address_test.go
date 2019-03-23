@@ -22,8 +22,9 @@ func TestAddress(t *testing.T) {
 		{statusOK: true, body: "fd3a:6175:2c72:b94f::1"},
 	} {
 		func() {
-			defer prepareAddressDetail(t, c.statusOK, c.body)()
-			ip, err := Address()
+			env := NewEnv()
+			defer prepareAddressDetail(t, env, c.statusOK, c.body)()
+			ip, err := Address(env)
 			if c.hasError {
 				a.Error(err)
 				t.Logf("err: %v", err)
@@ -35,15 +36,20 @@ func TestAddress(t *testing.T) {
 	}
 }
 
-func prepareAddressOK(t *testing.T, ip string) func() {
-	return prepareAddressDetail(t, true, ip)
+func prepareAddressOK(t *testing.T, env *Env, ip string) func() {
+	return prepareAddressDetail(t, env, true, ip)
 }
 
-func prepareAddressNG(t *testing.T) func() {
-	return prepareAddressDetail(t, false, "")
+func prepareAddressNG(t *testing.T, env *Env) func() {
+	return prepareAddressDetail(t, env, false, "")
 }
 
-func prepareAddressDetail(t *testing.T, statusOK bool, body string) func() {
+func prepareAddressDetail(
+	t *testing.T,
+	env *Env,
+	statusOK bool,
+	body string,
+) func() {
 	a := assert.New(t)
 	ts := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
@@ -54,10 +60,6 @@ func prepareAddressDetail(t *testing.T, statusOK bool, body string) func() {
 			_, err := io.WriteString(w, body)
 			a.NoError(err)
 		}))
-	original := checkipUrl
-	checkipUrl = ts.URL
-	return func() {
-		ts.Close()
-		checkipUrl = original
-	}
+	env.CheckIPURL = ts.URL
+	return ts.Close
 }

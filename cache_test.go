@@ -40,8 +40,9 @@ func TestNewCache(t *testing.T) {
 		`, pattern: "cache with IPv6"},
 	} {
 		func() {
-			defer prepareCacheDetail(t, c.cache)()
-			cache, err := NewCache(&Domain{Hostname: "example.com"})
+			env := NewEnv()
+			defer prepareCacheDetail(t, env, c.cache)()
+			cache, err := NewCache(env, &Domain{Hostname: "example.com"})
 			switch {
 			case c.noCache:
 				a.NoError(err, c.pattern)
@@ -59,13 +60,14 @@ func TestNewCache(t *testing.T) {
 
 func TestCacheCanUpdate(t *testing.T) {
 	a := assert.New(t)
-	defer prepareCacheDetail(t, `
+	env := NewEnv()
+	defer prepareCacheDetail(t, env, `
 		ip = '192.168.1.1'
 		createdAt = 2019-01-02T12:00:00Z
 		updatedAt = 2019-01-02T12:00:00Z
 		canUpdatedIn = 2019-12-01T12:00:00Z
 	`)()
-	cache, err := NewCache(&Domain{Hostname: "example.com"})
+	cache, err := NewCache(env, &Domain{Hostname: "example.com"})
 	a.NoError(err)
 	a.Implements((*Cache)(nil), cache)
 	err = cache.CanUpdate()
@@ -86,12 +88,13 @@ func TestCacheSave(t *testing.T) {
 		{hasCache: true, ip: "192.168.1.1", pattern: "valid IP with cache"},
 	} {
 		func() {
+			env := NewEnv()
 			if c.hasCache {
-				defer prepareCacheOK(t)()
+				defer prepareCacheOK(t, env)()
 			} else {
-				defer prepareCacheDetail(t, "")()
+				defer prepareCacheDetail(t, env, "")()
 			}
-			cache, err := NewCache(&Domain{Hostname: "example.com"})
+			cache, err := NewCache(env, &Domain{Hostname: "example.com"})
 			a.NoError(err, c.pattern)
 			a.Implements((*Cache)(nil), cache, c.pattern)
 			if c.hasError {
@@ -105,8 +108,8 @@ func TestCacheSave(t *testing.T) {
 	}
 }
 
-func prepareCacheOK(t *testing.T) func() {
-	return prepareCacheDetail(t, `
+func prepareCacheOK(t *testing.T, env *Env) func() {
+	return prepareCacheDetail(t, env, `
 			ip = '192.168.1.1'
 			createdAt = 2019-01-02T12:00:00Z
 			updatedAt = 2019-01-02T12:00:00Z
@@ -114,8 +117,8 @@ func prepareCacheOK(t *testing.T) func() {
 	`)
 }
 
-func prepareCacheNG(t *testing.T) func() {
-	return prepareCacheDetail(t, `
+func prepareCacheNG(t *testing.T, env *Env) func() {
+	return prepareCacheDetail(t, env, `
 			ip = 'hoge'
 			createdAt = 2019-01-02T12:00:00Z
 			updatedAt = 2019-01-02T12:00:00Z
@@ -125,6 +128,7 @@ func prepareCacheNG(t *testing.T) func() {
 
 func prepareCacheDetail(
 	t *testing.T,
+	env *Env,
 	content string,
 ) func() {
 	a := assert.New(t)
@@ -134,14 +138,11 @@ func prepareCacheDetail(
 		filename := path.Join(tmpDir, "example.com.cache")
 		a.NoError(ioutil.WriteFile(filename, []byte(content), 0600))
 	}
-	original := cacheDir
-	cacheDir = tmpDir
+	env.CacheDir = tmpDir
 	tt, err := time.Parse(time.RFC3339, "2019-01-02T12:05:00Z")
 	a.NoError(err)
-	timeNow = func() time.Time { return tt }
+	env.TimeNow = func() time.Time { return tt }
 	return func() {
 		os.RemoveAll(tmpDir)
-		cacheDir = original
-		timeNow = time.Now
 	}
 }

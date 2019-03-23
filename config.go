@@ -3,13 +3,9 @@ package main
 import (
 	"github.com/BurntSushi/toml"
 	"golang.org/x/xerrors"
-	validator "gopkg.in/go-playground/validator.v9"
 )
 
 const defaultIntervalSeconds = 60
-
-var validate = validator.New()
-var configFilename = "/usr/local/etc/goddns.toml"
 
 // Configs is a struct to define configuration of the app
 type Configs struct {
@@ -25,12 +21,12 @@ type Domain struct {
 }
 
 // LoadConfig loads config from TOML
-func LoadConfig() (*Configs, error) {
+func LoadConfig(env *Env) (*Configs, error) {
 	config := &Configs{Interval: defaultIntervalSeconds}
-	if _, err := toml.DecodeFile(configFilename, config); err != nil {
+	if _, err := toml.DecodeFile(env.ConfigFilename, config); err != nil {
 		return nil, xerrors.Errorf(": %w", err)
 	}
-	if err := validate.Struct(config); err != nil {
+	if err := env.Validate.Struct(config); err != nil {
 		return nil, xerrors.Errorf(": %w", err)
 	}
 	return config, nil

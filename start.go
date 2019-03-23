@@ -6,13 +6,13 @@ import (
 )
 
 // Start starts the main logic
-func Start(domain *Domain) (Result, error) {
-	ip, err := Address()
+func Start(env *Env, domain *Domain) (Result, error) {
+	ip, err := Address(env)
 	if err != nil {
 		return nil, xerrors.Errorf(": %w", err)
 	}
 	logger.Infof("detected: %s", ip)
-	cache, err := NewCache(domain)
+	cache, err := NewCache(env, domain)
 	if err != nil {
 		return nil, xerrors.Errorf(": %w", err)
 	}
@@ -23,7 +23,7 @@ func Start(domain *Domain) (Result, error) {
 	if err = cache.CanUpdate(); err != nil {
 		return nil, xerrors.Errorf(": %w", err)
 	}
-	updater := NewUpdater(domain, ip)
+	updater := NewUpdater(env, domain, ip)
 	result, err := updater.Update()
 	if err != nil {
 		return nil, xerrors.Errorf(": %w", err)

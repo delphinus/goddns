@@ -21,8 +21,9 @@ func TestUpdater(t *testing.T) {
 		{statusOK: true, body: "good 1.2.3.4"},
 	} {
 		func() {
-			defer prepareUpdaterDetail(t, c.statusOK, c.body)()
-			updater := NewUpdater(&Domain{Hostname: "example.com"}, "192.168.1.1")
+			env := NewEnv()
+			defer prepareUpdaterDetail(t, env, c.statusOK, c.body)()
+			updater := NewUpdater(env, &Domain{Hostname: "example.com"}, "192.168.1.1")
 			a.Implements((*Updater)(nil), updater)
 			result, err := updater.Update()
 			if c.hasError {
@@ -36,19 +37,24 @@ func TestUpdater(t *testing.T) {
 	}
 }
 
-func prepareUpdaterOK(t *testing.T) func() {
-	return prepareUpdaterDetail(t, true, "good 1.2.3.4")
+func prepareUpdaterOK(t *testing.T, env *Env) func() {
+	return prepareUpdaterDetail(t, env, true, "good 1.2.3.4")
 }
 
-func prepareUpdaterNG(t *testing.T) func() {
-	return prepareUpdaterDetail(t, false, "")
+func prepareUpdaterNG(t *testing.T, env *Env) func() {
+	return prepareUpdaterDetail(t, env, false, "")
 }
 
-func prepareUpdaterCritical(t *testing.T) func() {
-	return prepareUpdaterDetail(t, true, "nohost")
+func prepareUpdaterCritical(t *testing.T, env *Env) func() {
+	return prepareUpdaterDetail(t, env, true, "nohost")
 }
 
-func prepareUpdaterDetail(t *testing.T, statusOK bool, body string) func() {
+func prepareUpdaterDetail(
+	t *testing.T,
+	env *Env,
+	statusOK bool,
+	body string,
+) func() {
 	a := assert.New(t)
 	ts := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
@@ -59,10 +65,6 @@ func prepareUpdaterDetail(t *testing.T, statusOK bool, body string) func() {
 			_, err := io.WriteString(w, body)
 			a.NoError(err)
 		}))
-	original := updaterUrl
-	updaterUrl = ts.URL
-	return func() {
-		ts.Close()
-		updaterUrl = original
-	}
+	env.UpdaterURL = ts.URL
+	return ts.Close
 }

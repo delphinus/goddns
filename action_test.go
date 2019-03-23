@@ -12,16 +12,17 @@ import (
 
 func TestTick(t *testing.T) {
 	a := assert.New(t)
-	defer prepareConfig(t)()
-	defer prepareAddressOK(t, "192.168.100.100")()
-	defer prepareCacheOK(t)()
-	defer prepareUpdaterOK(t)()
+	env := NewEnv()
+	defer prepareConfig(t, env)()
+	defer prepareAddressOK(t, env, "192.168.100.100")()
+	defer prepareCacheOK(t, env)()
+	defer prepareUpdaterOK(t, env)()
 	newConfig := make(chan *Configs)
 	exit := make(chan int)
 	resultsChan := make(chan results)
-	config, err := LoadConfig()
+	config, err := LoadConfig(env)
 	a.NoError(err)
-	go tick(config, newConfig, exit, resultsChan)
+	go tick(env, config, newConfig, exit, resultsChan)
 	r1 := <-resultsChan
 	r2 := <-resultsChan
 	exit <- 1
@@ -35,35 +36,37 @@ func TestTick(t *testing.T) {
 
 func TestAction(t *testing.T) {
 	a := assert.New(t)
-	defer prepareConfig(t)()
-	defer prepareAddressOK(t, "192.168.100.100")()
-	defer prepareCacheOK(t)()
-	defer prepareUpdaterOK(t)()
-	sig := make(chan os.Signal)
+	env := NewEnv()
+	defer prepareConfig(t, env)()
+	defer prepareAddressOK(t, env, "192.168.100.100")()
+	defer prepareCacheOK(t, env)()
+	defer prepareUpdaterOK(t, env)()
+	env.Sig = make(chan os.Signal)
 	go func() {
 		time.Sleep(1500 * time.Millisecond)
 		t.Log("sending sig")
-		sig <- syscall.SIGINT
+		env.Sig <- syscall.SIGINT
 	}()
-	a.NoError(Action(sig)(&cli.Context{}))
+	a.NoError(Action(&cli.Context{}, env))
 	time.Sleep(1 * time.Second)
 }
 
 func TestActionReloadConfig(t *testing.T) {
 	a := assert.New(t)
-	defer prepareConfig(t)()
-	defer prepareAddressOK(t, "192.168.100.100")()
-	defer prepareCacheOK(t)()
-	defer prepareUpdaterOK(t)()
-	sig := make(chan os.Signal)
+	env := NewEnv()
+	defer prepareConfig(t, env)()
+	defer prepareAddressOK(t, env, "192.168.100.100")()
+	defer prepareCacheOK(t, env)()
+	defer prepareUpdaterOK(t, env)()
+	env.Sig = make(chan os.Signal)
 	go func() {
 		time.Sleep(1500 * time.Millisecond)
 		t.Log("sending SIGHUP")
-		sig <- syscall.SIGHUP
+		env.Sig <- syscall.SIGHUP
 		time.Sleep(2500 * time.Millisecond)
 		t.Log("sending SIGINT")
-		sig <- syscall.SIGINT
+		env.Sig <- syscall.SIGINT
 	}()
-	a.NoError(Action(sig)(&cli.Context{}))
+	a.NoError(Action(&cli.Context{}, env))
 	time.Sleep(3 * time.Second)
 }
