@@ -59,6 +59,7 @@ func (u *Updaters) req() (*http.Request, error) {
 	if err != nil {
 		return nil, xerrors.Errorf(": %w", err)
 	}
+	req.Header.Set("Content-type", "application/x-www-form-urlencoded")
 	req.SetBasicAuth(u.domain.Username, u.domain.Password)
 	return req, nil
 }
