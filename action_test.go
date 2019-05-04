@@ -13,15 +13,14 @@ import (
 func TestTick(t *testing.T) {
 	a := assert.New(t)
 	env := NewEnv()
-	defer prepareConfig(t, env)()
 	defer prepareAddressOK(t, env, "192.168.100.100")()
+	config, err := LoadConfig(env)
+	a.NoError(err)
 	defer prepareCacheOK(t, env)()
 	defer prepareUpdaterOK(t, env)()
 	newConfig := make(chan *Configs)
 	exit := make(chan int)
 	resultsChan := make(chan results)
-	config, err := LoadConfig(env)
-	a.NoError(err)
 	go tick(env, config, newConfig, exit, resultsChan)
 	r1 := <-resultsChan
 	r2 := <-resultsChan
@@ -37,7 +36,6 @@ func TestTick(t *testing.T) {
 func TestAction(t *testing.T) {
 	a := assert.New(t)
 	env := NewEnv()
-	defer prepareConfig(t, env)()
 	defer prepareAddressOK(t, env, "192.168.100.100")()
 	defer prepareCacheOK(t, env)()
 	defer prepareUpdaterOK(t, env)()
@@ -54,7 +52,6 @@ func TestAction(t *testing.T) {
 func TestActionReloadConfig(t *testing.T) {
 	a := assert.New(t)
 	env := NewEnv()
-	defer prepareConfig(t, env)()
 	defer prepareAddressOK(t, env, "192.168.100.100")()
 	defer prepareCacheOK(t, env)()
 	defer prepareUpdaterOK(t, env)()

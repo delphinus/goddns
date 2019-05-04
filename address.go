@@ -10,14 +10,14 @@ import (
 )
 
 // Address detects my IP address
-func Address(env *Env) (string, error) {
-	resp, err := http.Get(env.CheckIPURL)
+func Address(config *Configs) (string, error) {
+	resp, err := http.Get(config.CheckIPURL)
 	if err != nil {
 		return "", xerrors.Errorf(": %w", err)
 	}
 	if resp.StatusCode/100 != 2 {
 		return "", xerrors.New(fmt.Sprintf("%s returned %s",
-			env.CheckIPURL, resp.Status))
+			config.CheckIPURL, resp.Status))
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
