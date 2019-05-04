@@ -6,8 +6,8 @@ import (
 )
 
 // Start starts the main logic
-func Start(env *Env, domain *Domain) (Result, error) {
-	ip, err := Address(env)
+func Start(env *Env, config *Configs, domain *Domain) (Result, error) {
+	ip, err := Address(config)
 	if err != nil {
 		return nil, xerrors.Errorf(": %w", err)
 	}

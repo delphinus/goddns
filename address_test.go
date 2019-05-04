@@ -24,7 +24,9 @@ func TestAddress(t *testing.T) {
 		func() {
 			env := NewEnv()
 			defer prepareAddressDetail(t, env, c.statusOK, c.body)()
-			ip, err := Address(env)
+			config, err := LoadConfig(env)
+			a.NoError(err)
+			ip, err := Address(config)
 			if c.hasError {
 				a.Error(err)
 				t.Logf("err: %v", err)
@@ -60,6 +62,9 @@ func prepareAddressDetail(
 			_, err := io.WriteString(w, body)
 			a.NoError(err)
 		}))
-	env.CheckIPURL = ts.URL
-	return ts.Close
+	done := prepareConfig(t, env, ts.URL)
+	return func() {
+		done()
+		ts.Close()
+	}
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -35,14 +36,15 @@ hostname = '123.invalid.example.com'
 func TestLoadConfigValid(t *testing.T) {
 	a := assert.New(t)
 	env := NewEnv()
-	defer prepareConfig(t, env)()
+	defer prepareConfig(t, env, "")()
 	_, err := LoadConfig(env)
 	a.NoError(err)
 }
 
-func prepareConfig(t *testing.T, env *Env) func() {
-	return prepareConfigDetail(t, env, `
+func prepareConfig(t *testing.T, env *Env, checkIPURL string) func() {
+	return prepareConfigDetail(t, env, fmt.Sprintf(`
 interval = 1
+check_ip_url = '%s'
 
 [[domains]]
 username = 'hogehogeo'
@@ -53,7 +55,7 @@ hostname = 'example.com'
 username = 'hogehogeo2'
 password = 'fugafugao2'
 hostname = 'host2.example.com'
-`)
+`, checkIPURL))
 }
 
 func prepareConfigDetail(t *testing.T, env *Env, config string) func() {

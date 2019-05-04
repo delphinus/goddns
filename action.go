@@ -114,7 +114,7 @@ func process(
 	logger.Infof("loading %s", env.ConfigFilename)
 	for _, domain := range config.Domains {
 		logger.Infof("starting: %s", domain.Hostname)
-		result, err := Start(env, domain)
+		result, err := Start(env, config, domain)
 		if result != nil {
 			logger.Infof("result: %s", result)
 		}
